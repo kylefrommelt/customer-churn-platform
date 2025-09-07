@@ -150,7 +150,7 @@ npm install
 npm start
 ```
 
-## 📊 Usage Guide
+## Usage Guide
 
 ### 1. Data Pipeline
 ```bash
