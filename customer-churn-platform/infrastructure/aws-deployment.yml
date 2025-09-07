@@ -1,0 +1,65 @@
+# AWS ECS Task Definition for Customer Churn Platform
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-platform-config
+data:
+  DATABASE_URL: "postgresql://postgres:password@churn-db.cluster-xyz.us-west-2.rds.amazonaws.com:5432/churn_analytics"
+  REDIS_URL: "redis://churn-redis.abc123.cache.amazonaws.com:6379/0"
+  MLFLOW_TRACKING_URI: "http://mlflow-alb-123456789.us-west-2.elb.amazonaws.com:5001"
+
+---
+# ECS Task Definition
+{
+  "family": "churn-platform-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::123456789012:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "churn-backend",
+      "image": "123456789012.dkr.ecr.us-west-2.amazonaws.com/churn-platform-backend:latest",
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DATABASE_URL",
+          "value": "postgresql://postgres:password@churn-db.cluster-xyz.us-west-2.rds.amazonaws.com:5432/churn_analytics"
+        },
+        {
+          "name": "REDIS_URL",
+          "value": "redis://churn-redis.abc123.cache.amazonaws.com:6379/0"
+        },
+        {
+          "name": "MLFLOW_TRACKING_URI",
+          "value": "http://mlflow-alb-123456789.us-west-2.elb.amazonaws.com:5001"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/churn-platform",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "backend"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:5000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
